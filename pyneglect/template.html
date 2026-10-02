@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Monthly discovery of popular Python projects with open issues and recent activity.">
+<title>{{ snapshot.month }} · Pyneglect</title>
+<style>
+:root{color-scheme:light dark;--bg:#f4f4ef;--panel:#fff;--ink:#1b2927;--muted:#566662;--line:#d6dcd5;--accent:#11664f}
+@media(prefers-color-scheme:dark){:root{--bg:#111916;--panel:#1a241f;--ink:#e9efea;--muted:#afc0b4;--line:#3b4c41;--accent:#8dddb7}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,sans-serif}
+main{max-width:1320px;margin:auto;padding:48px 24px}a{color:var(--accent)}h1{font:clamp(2.2rem,5vw,3.8rem)/1.08 Georgia,serif;max-width:850px;margin:12px 0 24px;font-weight:normal}
+h2{font-size:1.1rem}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.8rem;color:var(--accent)}.intro{max-width:740px;font-size:1.12rem}.muted,small{color:var(--muted)}
+.stats{display:flex;gap:40px;flex-wrap:wrap;margin:32px 0}.stats strong{display:block;font-size:1.7rem;font-weight:500}.stats span{font-size:.8rem;color:var(--muted)}
+.controls{background:var(--panel);padding:20px;border:1px solid var(--line);border-radius:8px;display:flex;gap:16px;flex-wrap:wrap;align-items:end}label{font-size:.8rem;display:flex;flex-direction:column;gap:5px}
+input,select,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);padding:8px;border-radius:4px;min-height:40px}input[type=number]{width:110px}input[type=search]{width:230px}button{cursor:pointer}button:hover{border-color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}.table-wrap{overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}table{width:100%;border-collapse:collapse;min-width:920px}th,td{padding:16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}td{font-size:.9rem}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.name{font-weight:650}.desc{display:block;max-width:320px;font-size:.8rem;color:var(--muted);margin-top:5px}.pill{display:inline-block;font-size:.7rem;border:1px solid var(--line);border-radius:20px;padding:2px 7px;margin:3px 3px 0 0}details{margin-top:8px}summary{cursor:pointer;color:var(--accent)}.issues{padding-left:18px;min-width:260px}.issues li{margin:12px 0}.issues small{display:block}.page-controls{display:flex;align-items:center;gap:15px;margin:20px 0}.page-controls span{flex:1}footer{max-width:850px;margin-top:48px;border-top:1px solid var(--line);padding-top:16px;font-size:.9rem}#empty{padding:32px;text-align:center}.downloads{display:flex;gap:20px;margin:18px 0}.status{font-size:.85rem;color:var(--muted)}
+@media(max-width:700px){main{padding:28px 16px}.downloads{flex-wrap:wrap}.controls{gap:12px;padding:14px}.controls label{flex:1 1 130px}.controls input,.controls select{width:100%}.table-wrap{overflow:hidden}table{min-width:0}thead{display:none}tbody{display:block}tbody tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}td{display:block;min-width:0;border:0;padding:12px}td:first-child,td:last-child,td:nth-child(4){grid-column:1/-1}.num{text-align:left;white-space:normal}td:nth-child(2)::before{content:"Monthly downloads"}td:nth-child(3)::before{content:"Contributors"}td:nth-child(2)::before,td:nth-child(3)::before{display:block;color:var(--muted);font-size:.7rem}.desc{max-width:none;overflow-wrap:anywhere}.issues{min-width:0;padding-left:20px}.page-controls{flex-wrap:wrap}}
+</style>
+</head>
+<body><main>
+<header><div class="eyebrow">Pyneglect · Monthly discovery · {{ snapshot.month }}</div>
+<h1>Popular Python projects.<br>Open work to explore.</h1>
+<p class="intro">A starting point for finding projects to contribute to: widely downloaded packages, open issues, and recent activity. Explore the evidence and decide where your skills fit.</p>
+<p class="status">Downloads: {{ snapshot.source.period_start }} to {{ snapshot.source.period_end_exclusive }} (end exclusive). Repository observations: {{ snapshot.started_at[:10] }} to {{ snapshot.as_of[:10] }} UTC.</p>
+<p id="age" class="status"></p>
+</header>
+<div class="stats"><div><strong>{{ "{:,}".format(snapshot.counts.packages) }}</strong><span>packages screened</span></div><div><strong>{{ "{:,}".format(snapshot.counts.repositories) }}</strong><span>distinct repositories</span></div><div><strong>{{ "{:,}".format(snapshot.counts.eligible) }}</strong><span>eligible projects</span></div><div><strong>{{ snapshot.counts.unmapped }}</strong><span>packages without a supported mapping</span></div></div>
+<div class="downloads"><a href="candidates.csv" download>Download candidates · CSV</a><a href="snapshot.json" download>Full evidence · JSON</a><label>Edition<select id="edition">{% for month in months %}<option value="{{ month }}" {% if month == snapshot.month %}selected{% endif %}>{{ month }}</option>{% endfor %}</select></label></div>
+<p id="changes" class="status"></p>
+<section aria-label="Filter projects" class="controls">
+<label>View<select id="view"><option value="shortlist">Monthly shortlist</option><option value="directory">All eligible projects</option></select></label>
+<label>Search<input id="search" type="search" placeholder="Package, repository, description"></label>
+<label>Min. downloads<input id="downloads" type="number" min="0" step="1" placeholder="Any"></label>
+<label>Max. contributors<input id="contributors" type="number" min="0" step="1" placeholder="Any"></label>
+<label>Min. open issues<input id="issues" type="number" min="0" step="1" placeholder="Any"></label>
+<label>Min. open PRs<input id="prs" type="number" min="0" step="1" placeholder="Any"></label>
+<label>Issue updated within<select id="activity"><option value="365">365 days</option><option value="180">180 days</option><option value="90">90 days</option><option value="30">30 days</option></select></label>
+<label>Open issue labels<select id="label"><option value="">Any</option><option value="has_good_first_issue">Good first issue</option><option value="has_help_wanted">Help wanted</option></select></label>
+<label>Sort by<select id="sort"><option value="downloads">Downloads ↓</option><option value="open_issues">Open issues ↓</option><option value="open_prs">Open PRs ↓</option><option value="contributors">Contributors ↑</option><option value="issue_updated_at">Latest issue activity</option><option value="package">Package A–Z</option></select></label>
+<button id="reset" type="button">Reset filters</button>
+</section>
+<p id="view-note" class="status"></p>
+<div class="page-controls"><span id="count" role="status" aria-live="polite"></span><button id="prev" type="button">Previous</button><button id="next" type="button">Next</button></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">Project</th><th scope="col" class="num">Monthly downloads</th><th scope="col" class="num">Contributors</th><th scope="col" class="num">Open issues / PRs</th><th scope="col">Recent open issues</th></tr></thead><tbody id="rows"></tbody></table><p id="empty" hidden>No projects match these filters. Try the directory or reset your filters.</p></div>
+<footer><h2>How this list works</h2>
+<p>The directory requires an available, non-archived, non-disabled, non-mirror GitHub repository with issues enabled, an open issue updated within 365 days, and a push within 365 days. Forks and corporate projects remain eligible. The shortlist takes the 25 most downloaded eligible projects with an open issue updated within 180 days. Filters apply to the selected view.</p>
+<p>Downloads are for the repository’s largest package, not a sum or a count of users. CI, mirrors, and caches affect this measure. Sibling packages are listed with each project. Contributor counts are past-year human commit-author identities reported by ecosyste.ms; they are not maintainer counts. Data last synced more than 90 days before collection is shown as unknown. A contributor limit excludes unknown values.</p>
+<p>Issue updates and pushes may come from users or bots. They do not establish maintainer engagement, issue difficulty, or willingness to accept a contribution. Examples show the five most recently updated open issues; their first 20 labels and first 10 assignees are displayed. Label filters check the repository’s open issues for the exact labels “good first issue”, “good-first-issue”, “help wanted”, and “help-wanted”.</p>
+<p>Collected once a month, with no paid data services. Failed required collection leaves the previous edition in place. Sources: <a href="https://github.com/hugovk/top-pypi-packages">Top PyPI Packages</a>, <a href="https://pypi.org">PyPI</a>, <a href="https://github.com">GitHub</a>, and <a href="https://ecosyste.ms">ecosyste.ms</a> (data <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>). Source update: {{ snapshot.source.updated_at }}.</p>
+</footer>
+</main>
+<script id="snapshot" type="application/json">{{ data | safe }}</script>
+<script>
+'use strict';
+const data=JSON.parse(document.getElementById('snapshot').textContent);
+const $=id=>document.getElementById(id), fmt=n=>new Intl.NumberFormat('en').format(n);
+const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const age=s=>s?Math.max(0,(Date.parse(data.as_of)-Date.parse(s))/86400000):Infinity;
+const day=s=>s?s.slice(0,10):'Unknown';
+const safeURL=s=>{try{const u=new URL(s);return u.protocol==='https:'&&u.hostname==='github.com'?escape(u.href):'#';}catch{return '#';}};
+const ids=['view','search','downloads','contributors','issues','prs','activity','label','sort'];
+let page=0; const pageSize=50;
+const elapsed=Math.floor((Date.now()-Date.parse(data.as_of))/86400000);
+$('age').textContent=elapsed>40?`This edition is ${elapsed} days old. All figures reflect its collection dates; follow the links for current status.`:'All figures reflect this edition. Follow issue links to check current status.';
+$('changes').textContent=data.previous_month?`Compared with ${data.previous_month} · Entered: ${data.entrants.join(', ')||'none'} · Left: ${data.exits.join(', ')||'none'}. Changes in coverage or activity can change membership.`:'First saved edition; monthly shortlist changes will appear here.';
+function render(){
+ const short=$('view').value==='shortlist', term=$('search').value.toLowerCase();
+ let rows=data.repositories.filter(r=>!r.exclusions.length&&(!short||data.shortlist.includes(r.repo)));
+ rows=rows.filter(r=>[r.repo,r.description,...r.packages.map(p=>p.package)].join(' ').toLowerCase().includes(term)
+  &&r.downloads>=Number($('downloads').value||0)&&r.open_issues>=Number($('issues').value||0)
+  &&r.open_prs>=Number($('prs').value||0)&&age(r.issue_updated_at)<=Number($('activity').value)
+  &&(!$('contributors').value||(r.contributors!==null&&r.contributors<=Number($('contributors').value)))
+  &&(!$('label').value||r[$('label').value]));
+ const key=$('sort').value;
+ rows.sort((a,b)=>{let d=0;if(key==='package')d=a.package.localeCompare(b.package);
+  else if(key==='contributors')d=(a.contributors??Infinity)-(b.contributors??Infinity);
+  else if(key==='issue_updated_at')d=Date.parse(b[key])-Date.parse(a[key]);else d=b[key]-a[key];
+  return d||a.repo.localeCompare(b.repo);});
+ page=Math.min(page,Math.max(0,Math.ceil(rows.length/pageSize)-1));
+ $('count').textContent=`${fmt(rows.length)} projects · Page ${page+1} of ${Math.max(1,Math.ceil(rows.length/pageSize))}`;
+ $('prev').disabled=page===0;$('next').disabled=(page+1)*pageSize>=rows.length;$('empty').hidden=rows.length!==0;
+ $('view-note').textContent=short?'The 25 most downloaded eligible projects with an open issue updated within 180 days. This is an automated discovery list, not an assessment of contribution quality.':'All projects meeting the published eligibility rules. Unknown contributor counts stay visible unless you set a limit.';
+ $('rows').innerHTML=rows.slice(page*pageSize,(page+1)*pageSize).map(r=>`<tr>
+  <td><a class="name" href="${safeURL('https://github.com/'+r.repo)}">${escape(r.package)}</a><span class="desc">${escape(r.repo)}</span><span class="desc">${escape(r.description)}</span>
+  ${r.fork?'<span class="pill">Fork</span>':''}${r.has_good_first_issue?'<span class="pill">Good first issue</span>':''}${r.has_help_wanted?'<span class="pill">Help wanted</span>':''}
+  ${r.packages.length>1?`<details><summary>${r.packages.length} packages</summary>${r.packages.map(p=>`<div>${escape(p.package)} · ${fmt(p.downloads)}</div>`).join('')}</details>`:''}
+  <small class="desc">Push: ${day(r.pushed_at)} · PyPI release: ${day(r.latest_release_at)}</small></td>
+  <td class="num">${fmt(r.downloads)}</td><td class="num">${r.contributors===null?'Unknown':fmt(r.contributors)}<small class="desc">${escape(r.commit_status)}${r.commits_synced_at?' · '+day(r.commits_synced_at):''}</small></td>
+  <td class="num"><a href="${safeURL('https://github.com/'+r.repo+'/issues')}">${fmt(r.open_issues)} issues</a><br><a href="${safeURL('https://github.com/'+r.repo+'/pulls')}">${fmt(r.open_prs)} PRs</a></td>
+  <td><small>Latest update: ${day(r.issue_updated_at)}</small><details><summary>Explore ${r.issues.length} open issues</summary><ul class="issues">${r.issues.map(i=>`<li><a href="${safeURL(i.url)}">#${i.number} ${escape(i.title)}</a><small>Updated ${day(i.updated_at)} · ${i.assignee_count?escape(i.assignees.join(', ')):'Unassigned'}</small><small>${escape(i.labels.join(' · '))}</small></li>`).join('')}</ul></details></td></tr>`).join('');
+}
+ids.forEach(id=>$(id).addEventListener('input',()=>{page=0;render();}));
+$('prev').addEventListener('click',()=>{page--;render();});$('next').addEventListener('click',()=>{page++;render();});
+$('reset').addEventListener('click',()=>{ids.forEach(id=>{const el=$(id);if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';});page=0;render();});
+$('edition').addEventListener('change',()=>{location.href='../'+$('edition').value+'/';});
+render();
+</script></body></html>
