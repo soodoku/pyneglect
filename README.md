@@ -1,5 +1,8 @@
 # pyneglect
 
+[Monthly report](https://gsood.com/pyneglect/) ·
+[Workflow runs](https://github.com/soodoku/pyneglect/actions/workflows/monthly.yml)
+
 Monthly discovery of popular Python projects with open issues and recent activity.
 A 25-project shortlist and filterable directory link to issues and downloadable
 evidence. These are places to investigate, not claims about neglect, staffing,
@@ -70,9 +73,13 @@ Required failures are not cached as misses. A required network, API, or validati
 failure exits nonzero before a completed snapshot is written. The previous site
 stays published. Rerun to resume. A checkpoint older than seven days must be removed
 to collect fresh data; this does not remove completed snapshots.
+For a workflow retry after seven days, delete that edition's `monthly-v1-YYYY-MM-…`
+checkpoint cache from the repository's Actions caches before dispatching again.
 
 Optional contributor failures do not block publication. Missing values, invalid
 counts, or data synced more than 90 days before collection appear as unknown.
+Optional collection has a ten-minute budget and stops after a whole batch fails;
+uncollected values remain unknown, so an enrichment outage cannot stall publication.
 Public snapshots contain discovery fields, not commit-author emails or raw responses.
 
 ## Monthly hosting at no service cost

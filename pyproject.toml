@@ -16,7 +16,7 @@ classifiers = [
 [project.urls]
 Repository = "https://github.com/soodoku/pyneglect"
 Issues = "https://github.com/soodoku/pyneglect/issues"
-Report = "https://soodoku.github.io/pyneglect/"
+Report = "https://gsood.com/pyneglect/"
 
 [project.scripts]
 pyneglect = "pyneglect.cli:main"

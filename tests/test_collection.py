@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from pyneglect.client import Client, CollectionError
-from pyneglect.collect import GQL, collect, github_batch, github_collect
+from pyneglect.collect import GQL, collect, enrich, github_batch, github_collect
 from pyneglect.model import SOURCE
 
 
@@ -130,3 +130,20 @@ async def test_parallel_github_successes_survive_failure(monkeypatch):
     assert len(destination) == 20
     assert "org/10" not in destination
     assert saved[-1] == destination
+
+
+async def test_optional_outage_stops_enrichment_but_keeps_unknowns():
+    class Offline:
+        calls = 0
+
+        async def request(self, *args, **kwargs):
+            self.calls += 1
+            raise CollectionError("offline")
+
+    client = Offline()
+    results = {}
+    await enrich(client, [f"org/{i}" for i in range(30)], results, lambda: None)
+    assert client.calls == 4
+    assert len(results) == 30
+    assert all(r["contributors"] is None for r in results.values())
+    assert results["org/29"]["commit_status"] == "not collected"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.parse import quote
@@ -188,11 +189,43 @@ def commit_metrics(payload: dict | None, now: datetime) -> dict:
 
 async def optional_commits(client: Client, slug: str) -> dict:
     try:
-        payload = await client.request(ECOCOMMITS + quote(slug, safe=""))
+        async with asyncio.timeout(20):
+            payload = await client.request(ECOCOMMITS + quote(slug, safe=""))
         return commit_metrics(payload, datetime.now(UTC))
-    except (CollectionError, ValueError, TypeError):
+    except (CollectionError, ValueError, TypeError, TimeoutError):
         LOG.warning("Optional contributor data unavailable for %s", slug)
         return {"contributors": None, "commits_synced_at": None, "commit_status": "unavailable"}
+
+
+async def enrich(client: Client, slugs: list[str], destination: dict, save) -> None:
+    todo = [slug for slug in slugs if slug not in destination]
+    deadline = time.monotonic() + 600
+    for offset in range(0, len(todo), 4):
+        if time.monotonic() >= deadline:
+            LOG.warning("Optional contributor collection reached its 10-minute time budget")
+            break
+        chunk = todo[offset : offset + 4]
+        results = await asyncio.gather(*(optional_commits(client, slug) for slug in chunk))
+        destination.update(zip(chunk, results, strict=True))
+        save()
+        if all(result["commit_status"] == "unavailable" for result in results):
+            LOG.warning(
+                "Optional contributor service unavailable; keeping remaining values unknown"
+            )
+            break
+        if offset % 80 == 0 or offset + 4 >= len(todo):
+            LOG.info("Contributor records: %d/%d", len(destination), len(slugs))
+        await asyncio.sleep(1)
+    for slug in todo:
+        destination.setdefault(
+            slug,
+            {
+                "contributors": None,
+                "commits_synced_at": None,
+                "commit_status": "not collected",
+            },
+        )
+    save()
 
 
 async def batches(items, fetch, destination: dict, save, size=8):
@@ -283,7 +316,7 @@ async def collect(
             canonical[slug]["packages"].extend(repo["packages"])
     observed = datetime.now(UTC)
     eligible = [slug for slug, r in canonical.items() if not exclusions(r, observed)]
-    await batches(eligible, lambda r: optional_commits(client, r), state["commits"], save, size=4)
+    await enrich(client, eligible, state["commits"], save)
     as_of = datetime.now(UTC)
     rows = []
     for slug, repo in canonical.items():
